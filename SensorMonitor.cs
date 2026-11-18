@@ -1,0 +1,64 @@
+/*****************/
+// Mã sinh viên: 202418889
+// Họ tên: Đặng Thị Hương Giang
+/*****************/
+
+using System;
+using System.Collections.Generic;
+
+namespace CampusSafetyHub;
+
+// Subject quản lý Observer, đọc cảm biến và phát cảnh báo (Bản nháp ban đầu)
+public sealed class SensorMonitor
+{
+    private readonly List<IAlertObserver> observers = new();
+
+    public void Attach(IAlertObserver observer)
+    {
+        ArgumentNullException.ThrowIfNull(observer);
+        // Lỗi 1 của sinh viên: Quên kiểm tra trùng lặp !observers.Contains(observer),
+        // dẫn đến 1 observer có thể bị đăng ký 2 lần gây nhận trùng thông báo
+        observers.Add(observer);
+    }
+
+    public void Detach(IAlertObserver observer)
+    {
+        observers.Remove(observer);
+    }
+
+    public void CheckSensor(string sensorName, ISensor sensor)
+    {
+        double value = sensor.ReadValue();
+        string? severity = value switch
+        {
+            >= 70 => "CRITICAL",
+            >= 50 => "WARNING",
+            _ => null
+        };
+
+        if (severity is null)
+        {
+            return;
+        }
+
+        var alertEvent = new AlertEvent(
+            sensorName,
+            value,
+            sensor.GetUnit(),
+            severity,
+            DateTime.Now);
+
+        Notify(alertEvent);
+    }
+
+    private void Notify(AlertEvent alertEvent)
+    {
+        // Lỗi 2 của sinh viên: Duyệt trực tiếp trên List observers thay vì observers.ToArray(),
+        // nếu observer tự Detach trong lúc Update sẽ văng InvalidOperationException
+        // Lỗi 3 của sinh viên: Chưa có try-catch cô lập, nếu 1 observer ném lỗi thì các observer khác bị chặn
+        foreach (IAlertObserver observer in observers)
+        {
+            observer.Update(alertEvent);
+        }
+    }
+}

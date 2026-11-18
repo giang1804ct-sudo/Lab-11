@@ -14,19 +14,20 @@ internal class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
 
-        Console.WriteLine("=== BƯỚC 1: KIỂM THỬ ADAPTER CHO CẢM BIẾN KHÓI CŨ ===");
+        Console.WriteLine("=== BƯỚC 2: THỬ NGHIỆM OBSERVER SENSORMONITOR (BẢN NHÁP) ===");
 
-        // Khởi tạo cảm biến cũ với giá trị 735 (thang đo 0..1000)
-        var legacy = new LegacySmokeDetector(735);
-        Console.WriteLine($"Thiết bị cũ: {legacy.GetDescription()}");
-        Console.WriteLine($"Mức khói thô từ thiết bị cũ: {legacy.GetSmokeLevel()}");
+        var monitor = new SensorMonitor();
+        var dashboard = new DashboardObserver();
 
-        // Sử dụng Adapter để chuyển đổi sang interface chuẩn ISensor
+        // Thử nghiệm đăng ký
+        monitor.Attach(dashboard);
+        monitor.Attach(dashboard); // Lỗi: đăng ký 2 lần do chưa kiểm tra trùng
+
+        var legacy = new LegacySmokeDetector(550); // 55.0% -> WARNING
         ISensor sensor = new SmokeSensorAdapter(legacy);
-        Console.WriteLine("\nĐọc qua SmokeSensorAdapter:");
-        Console.WriteLine($"Giá trị chuẩn hóa: {sensor.ReadValue():F1}{sensor.GetUnit()}");
 
-        bool passed = Math.Abs(sensor.ReadValue() - 73.5) < 0.001 && sensor.GetUnit() == "% smoke";
-        Console.WriteLine($"-> KẾT QUẢ ADAPTER: {(passed ? "ĐẠT CHUẨN" : "CHƯA ĐẠT")}");
+        Console.WriteLine("\nKiểm tra mức khói 55.0% (WARNING):");
+        monitor.CheckSensor("Cảm biến phòng máy A1", sensor);
+        Console.WriteLine("-> Nhận xét: Dashboard bị in trùng 2 lần do lỗi đăng ký lặp!");
     }
 }
