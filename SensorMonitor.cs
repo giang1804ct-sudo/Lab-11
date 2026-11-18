@@ -8,19 +8,22 @@ using System.Collections.Generic;
 
 namespace CampusSafetyHub;
 
-// Subject quản lý Observer, đọc cảm biến và phát cảnh báo (Bản nháp ban đầu)
+// Subject quản lý Observer, đọc cảm biến và phát cảnh báo (Đã sửa lỗi an toàn)
 public sealed class SensorMonitor
 {
     private readonly List<IAlertObserver> observers = new();
 
+    // 1. Không cho cùng một observer đăng ký hai lần
     public void Attach(IAlertObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
-        // Lỗi 1 của sinh viên: Quên kiểm tra trùng lặp !observers.Contains(observer),
-        // dẫn đến 1 observer có thể bị đăng ký 2 lần gây nhận trùng thông báo
-        observers.Add(observer);
+        if (!observers.Contains(observer))
+        {
+            observers.Add(observer);
+        }
     }
 
+    // 2. Có thể hủy đăng ký observer
     public void Detach(IAlertObserver observer)
     {
         observers.Remove(observer);
@@ -53,12 +56,19 @@ public sealed class SensorMonitor
 
     private void Notify(AlertEvent alertEvent)
     {
-        // Lỗi 2 của sinh viên: Duyệt trực tiếp trên List observers thay vì observers.ToArray(),
-        // nếu observer tự Detach trong lúc Update sẽ văng InvalidOperationException
-        // Lỗi 3 của sinh viên: Chưa có try-catch cô lập, nếu 1 observer ném lỗi thì các observer khác bị chặn
-        foreach (IAlertObserver observer in observers)
+        // 3. Duyệt trên bản sao ToArray() để observer có thể bị gỡ trong khi thông báo
+        // mà không làm hỏng vòng lặp (Collection was modified)
+        foreach (IAlertObserver observer in observers.ToArray())
         {
-            observer.Update(alertEvent);
+            try
+            {
+                // 5. Một observer lỗi không được làm sai dữ liệu của observer khác
+                observer.Update(alertEvent);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[LỖI OBSERVER {observer.GetType().Name}]: {ex.Message}");
+            }
         }
     }
 }
