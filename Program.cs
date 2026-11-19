@@ -14,30 +14,18 @@ internal class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
 
-        Console.WriteLine("=== BƯỚC 3: KIỂM THỬ OBSERVER HOÀN THIỆN (DASHBOARD, EMAIL, AUDITLOG) ===");
+        Console.WriteLine("=== BƯỚC 4: THỬ NGHIỆM ĐIỀU PHỐI ĐỘC LẬP QUA MEDIATOR ===");
 
-        var monitor = new SensorMonitor();
-        var dashboard = new DashboardObserver();
-        var email = new EmailAlertObserver();
-        var auditLog = new AuditLogObserver();
+        var alarm = new Alarm();
+        var door = new DoorController();
+        var ventilation = new VentilationController();
 
-        // Kiểm tra tính năng chống đăng ký trùng
-        monitor.Attach(dashboard);
-        monitor.Attach(dashboard); // Bị bỏ qua, không bị lặp
-        monitor.Attach(email);
-        monitor.Attach(auditLog);
+        var mediator = new EmergencyMediator(alarm, door, ventilation);
 
-        var legacy = new LegacySmokeDetector(620); // 62.0% -> WARNING
-        ISensor sensor = new SmokeSensorAdapter(legacy);
+        Console.WriteLine("\n[Thử nghiệm phát sự kiện FIRE_DETECTED thủ công]:");
+        mediator.TriggerEmergency("FIRE_DETECTED");
 
-        Console.WriteLine("\n[Kiểm tra phát cảnh báo mức WARNING (62.0%)]:");
-        monitor.CheckSensor("Phòng máy chủ Server-Room-01", sensor);
-
-        Console.WriteLine("\n[Kiểm tra hủy đăng ký Email (Detach)]:");
-        monitor.Detach(email);
-
-        legacy.SetSmokeLevel(650); // 65.0% -> WARNING
-        monitor.CheckSensor("Phòng máy chủ Server-Room-01", sensor);
-        Console.WriteLine("-> Nhận xét: Email đã được hủy đăng ký thành công, không còn nhận thông báo.");
+        bool allActivated = alarm.IsRinging && door.IsUnlocked && ventilation.IsExhaustRunning;
+        Console.WriteLine($"-> KẾT QUẢ ĐIỀU PHỐI: {(allActivated ? "TẤT CẢ THIẾT BỊ ĐÃ KÍCH HOẠT ĐỒNG THỜI" : "CHƯA HOÀN TẤT")}");
     }
 }
